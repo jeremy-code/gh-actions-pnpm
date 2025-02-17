@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [23.8.0]
+
+    steps:
+      - name: Check out Git repository
+        id: checkout
+        uses: actions/checkout@v4
+
+      - run: |
+          echo "Node.js version: $(node -v), Node.js path: $(which node)"
+          echo "NPM version: $(npm -v), NPM path: $(which npm)"
+          echo "Corepack version: $(corepack -v), NPM path: $(which corepack)"
+          echo "Current \$PATH: $PATH"
+
+      - run: |
+          npm install -g corepack
+
+          echo "Node.js version: $(node -v), Node.js path: $(which node)"
+          echo "NPM version: $(npm -v), NPM path: $(which npm)"
+          echo "Corepack version: $(corepack -v), NPM path: $(which corepack)"
+          echo "Current \$PATH: $PATH"
+
+          corepack enable
+          echo "PNPM version: $(pnpm -v), PNPM path: $(which pnpm)"
+          echo "Current \$PATH: $PATH"
+
+      - name: Set up Node.js environment
+        id: setup_node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+          always-auth: true
+
+      - run: |
+          echo "Node.js version: $(node -v), Node.js path: $(which node)"
+          echo "NPM version: $(npm -v), NPM path: $(which npm)"
+          echo "Corepack version: $(corepack -v), NPM path: $(which corepack)"
+          echo "Current \$PATH: $PATH"
+
+          echo "PNPM version: $(pnpm -v), PNPM path: $(which pnpm)"
+
+      - name: Update `.npmrc` file
+        run: |
+          cat << EOF >> ${{ env.NPM_CONFIG_USERCONFIG }}
+
+          ; npm
+          access=public
+          provenance=true
+
+          ; pnpm
+          loglevel=`if [[ "$RUNNER_DEBUG" -eq "1" ]]; then echo "debug"; else echo "info"; fi`
+          npm-path=`npm config get prefix`/bin/npm
+          verify-deps-before-run=install
+          EOF
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run command
+        run: pnpm run start

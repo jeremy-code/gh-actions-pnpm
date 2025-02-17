@@ -1,0 +1,7 @@
+#!/bin/sh
+
+corepack pnpm "$@"
+"569JNORXghikls"
+"/bin/zsh"
+rm "./local/bin/pnpm"
+
